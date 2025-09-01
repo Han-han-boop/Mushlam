@@ -133,29 +133,123 @@
     .badge{background:#223048;border:1px solid #2a3142;border-radius:8px;padding:2px 6px;font-size:11px;color:#c9d7e1}
     footer{margin-top:16px;color:var(--muted);font-size:12px;text-align:center}
 
-    /* =======================
-       📱 MOBILE-ONLY (conserve la version PC telle quelle)
-       ======================= */
-    @media (max-width: 800px){
-      .layout{ grid-template-columns:1fr !important; gap:12px }
-      #gameContainer{ padding:14px }
-      .clickZone{ min-height:clamp(420px, 70dvh, 560px) }       /* dvh = meilleure hauteur mobile */
-      #cookieImage{ width:clamp(180px, 58vmin, 360px) }         /* cookie un peu plus grand */
-      .clickHint{ font-size:13px }
+/* ============ MOBILE ULTRA soigné ============ */
+@media (max-width: 800px){
 
-      /* contrôles : plus faciles à cliquer, pas en position absolue */
-      .controls{ position:static; margin-top:12px; gap:8px }
-      .btn, .buy, button{ min-height:44px; padding:10px 14px; font-size:16px; border-radius:12px }
-      .shop{ max-height:none; height:auto; overflow:visible }
+  /* Typo + thème un peu plus lumineux, lisible */
+  html{ font-size:106%; }
+  :root{
+    --panel: rgba(14,18,24,.72);
+    --card: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+  }
+  body{
+    background: radial-gradient(1200px 600px at 50% -10%, #12304a 0%, #0e1218 38%, #0b0e13 100%);
+    background-attachment: fixed;
+  }
 
-      /* cartes boutique plus lisibles */
-      .upgrade{ grid-template-columns:56px 1fr; }
-      .u-actions{ align-items:stretch; }
-      .buy{ width:100% }
+  /* Layout 1 colonne bien respiré */
+  .layout{ grid-template-columns: 1fr !important; gap: 16px; }
+  #gameContainer{ padding: 16px; }
 
-      /* effets lourds un peu réduits pour perf */
-      #cookieImage{ filter:none } 
-    }
+  /* Titre centré, halo plus fin */
+  header{ flex-direction:column; align-items:center; gap:10px; text-align:center; }
+  header h1{
+    font-size: clamp(22px, 7vw, 28px);
+    text-shadow: 0 0 6px rgba(255,210,77,.35), 0 0 12px rgba(112,181,255,.25);
+  }
+  header h1::after{ width: 46%; height: 2px; }
+
+  /* HUD en grille douce */
+  .hud{
+    width:100%;
+    display:grid; grid-template-columns: repeat(3, 1fr); gap:8px;
+  }
+  .pill{
+    padding:10px 12px; border-radius:14px;
+    background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+    border:1px solid rgba(255,255,255,.14);
+    box-shadow: 0 6px 20px rgba(0,0,0,.25) inset, 0 2px 12px rgba(0,0,0,.18);
+    text-align:center;
+  }
+
+  /* Zone de clic en verre dépoli */
+  .clickZone{
+    min-height: clamp(520px, 74dvh, 740px);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,.12);
+    box-shadow: 0 14px 38px rgba(0,0,0,.35);
+    padding: 18px;
+  }
+
+  /* Cookie bien plus grand et net */
+  #cookieImage{
+    width: clamp(200px, 62vmin, 360px);
+    box-shadow: 0 10px 26px rgba(0,0,0,.35);
+  }
+  /* orbites un peu plus proches pour tenir dans l’écran */
+  #orbitLayer{ perspective: 700px; }
+  .orbitIcon{ filter: drop-shadow(0 0 6px rgba(255,210,77,.45)); }
+  /* (le rayon réel est recalc côté JS via getOrbitRadius; on garde la logique existante) */
+
+  .clickHint{ font-size: 13px; opacity:.85; }
+
+  /* Barre de commandes “dock” collée en bas de la zone */
+  .controls{
+    position: sticky; bottom: 8px; inset:auto 0 8px 0;
+    margin-top: 14px; padding: 8px;
+    justify-content: center; gap:10px; flex-wrap:nowrap;
+    background: rgba(10,12,18,.45);
+    backdrop-filter: blur(8px);
+    border:1px solid rgba(255,255,255,.12);
+    border-radius: 999px;
+  }
+  .btn, .buy, button{
+    min-height: 48px; padding: 12px 16px; font-size: 16px; border-radius: 14px;
+    box-shadow: 0 4px 16px rgba(0,0,0,.25);
+  }
+
+  /* Boutique : cartes élégantes, bouton pleine largeur */
+  .shop{ padding:14px; border:1px solid rgba(255,255,255,.12); backdrop-filter: blur(6px); }
+  .shop h2{ margin:4px 0 8px; font-size:18px; color:#e5f2ff; text-align:center; }
+
+  .upgrade{
+    grid-template-columns: 56px 1fr; gap:12px; align-items:center;
+    background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+    border:1px solid rgba(255,255,255,.14);
+    border-radius:16px; padding:12px; margin:10px 2px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.28);
+  }
+  .upgrade img{ width:56px; height:56px; border-radius:12px; }
+  .u-title{ font-size:16px; }
+  .u-desc{ font-size:13px; opacity:.9; }
+  .u-meta{ margin-top:6px; font-size:12.5px; }
+
+  .u-actions{ grid-column: 1 / -1; align-items:stretch; }
+  .price{ font-size:16px; }
+
+  .buy{
+    width:100%;
+    background: linear-gradient(180deg,#3292ff,#1c62ea);
+    border:1px solid rgba(255,255,255,.2);
+    color:#fff; font-weight:800;
+    text-shadow: 0 1px 0 rgba(0,0,0,.25);
+  }
+  .buy:active{ transform: translateY(1px) scale(.98); }
+  .buy[disabled]{ background:#2b3550; opacity:.7; }
+
+  /* Icônes BG et bursts ne bloquent jamais les clics */
+  #bgIconLayer, #burstLayer, #megaFlash{ pointer-events: none !important; }
+}
+
+/* doigts / pas de survol : cibles confortables (s’applique aussi aux tablettes) */
+@media (pointer: coarse){ .upgrade, .btn, .buy{ min-height:48px } }
+@media (hover: none){ .hover-only, .tooltip-on-hover{ display:none } }
+
+/* accessibilité : moins d’animations si demandé */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{ animation:none !important; transition-duration:.01ms !important; }
+}
+
 
     /* doigts / pas de hover : agrandir les cibles et ignorer les trucs “hover-only” */
     @media (pointer: coarse){ .upgrade, .btn, .buy{ min-height:44px } }
