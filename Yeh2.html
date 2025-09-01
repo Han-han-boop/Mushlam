@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Mushlam</title>
+  <title>Custom Clicker Game</title>
   <style>
     :root{
       --bg:#056666; --panel:#000000; --card:linear-gradient(150deg,#056666,#0e1218);
@@ -260,7 +260,7 @@
       </aside>
     </div>
 
-    <footer><span class="badge">Astuce : Maj-clic = ×10 | Ctrl-clic = “max”</span></footer>
+    <footer><span class="badge">Astuce : Maj-clic = ×10 | Ctrl-clic = “max”. Mushlam</span></footer>
   </div>
 
   <script>
@@ -434,6 +434,24 @@
     // ====== INIT ======
     function init(){ load(); muteToggle.checked=muted; renderShop(); onStateChange(false); syncBgIcons(); syncOrbitIcons(); }
     init();
+	
+	// Si l’image du cookie n’est pas prête, (re)synchroniser quand elle charge
+if (!cookieImg.complete) {
+  cookieImg.addEventListener('load', () => {
+    // on reconstruit l’anneau avec de bons rayons
+    const n = orbitLayer.children.length;
+    orbitAngles = [];
+    Array.from(orbitLayer.children).forEach(el=>el.remove());
+    for(let i=0;i<n;i++) addOrbitIcon();
+    recalibrateOrbitRadii();
+  }, { once:true });
+}
+
+// Mieux gérer les changements de viewport (barres d’adresse, rotation)
+window.addEventListener('orientationchange', () => {
+  setTimeout(()=>{ recalibrateOrbitRadii(); }, 200);
+});
+
 
     // ====== EFFETS ======
     function burstCookies(count=10, duration=3000){
@@ -449,11 +467,14 @@
     }
 
     // ====== ORBITES ======
-    function getOrbitRadius(){
-      const rect=cookieImg.getBoundingClientRect();
-      const extra = (matchMedia('(pointer: coarse)').matches ? 26 : 50);
-      return Math.round(rect.width/2) + extra;
-    }
+function getOrbitRadius(){
+  // dimensions fiables même si l'image n'est pas encore “layoutée”
+  let w = cookieImg.offsetWidth || cookieImg.getBoundingClientRect().width;
+  if (!w || w < 10) w = 240; // fallback prudent pour mobile
+  const extra = (matchMedia('(pointer: coarse)').matches ? 26 : 50);
+  return Math.round(w/2) + extra;
+}
+
 
     // Mobile : angles aléatoires mais espacés. Desktop : aléatoire pur (inchangé).
     function useSpacedAngles(){
@@ -480,28 +501,46 @@
       return bestA;
     }
 
-    function addOrbitIcon(){
-      if(!orbitLayer) return;
-      const orb=document.createElement('div'); orb.className='orb';
-      const img=document.createElement('img'); img.className='orbitIcon'; img.src=upgrades.upgrade2.icon; img.alt='Icône production auto';
+function addOrbitIcon(){
+  if(!orbitLayer) return;
 
-      let angle;
-      if(useSpacedAngles()){ angle = pickAngle(); orbitAngles.push(angle); }
-      else{ angle = Math.floor(Math.random()*360); }
+  const orb = document.createElement('div');
+  orb.className = 'orb';
 
-      const speed=(14+Math.random()*12).toFixed(1);
-      const wobble=(1.8+Math.random()*1.6).toFixed(1);
-      const size=Math.floor(45+Math.random()*25);
-      const radius=getOrbitRadius()+Math.floor(-70+Math.random()*60);
+  const img = document.createElement('img');
+  img.className = 'orbitIcon';
+  img.src = upgrades.upgrade2.icon;
+  img.alt = 'Icône production auto';
 
-      orb.style.setProperty('--a0', angle+'deg');
-      orb.style.setProperty('--speed', speed+'s');
-      img.style.setProperty('--size', size+'px');
-      img.style.setProperty('--r', radius+'px');
-      img.style.setProperty('--wobble', wobble+'s');
+  // — angle —
+  let angle;
+  if (useSpacedAngles()){
+    angle = pickAngle(); orbitAngles.push(angle);
+  } else {
+    angle = Math.floor(Math.random()*360);
+  }
+  orb.style.setProperty('--a0', angle + 'deg');
 
-      orbitLayer.appendChild(orb); orb.appendChild(img);
-    }
+  // — paramètres d’anim —
+  const speed  = (14 + Math.random()*12).toFixed(1);
+  const wobble = (1.8 + Math.random()*1.6).toFixed(1);
+  const size   = Math.floor(45 + Math.random()*25);
+
+  // — offset radial ALÉATOIRE, symétrique, et PERSISTANT —
+  // (évite que tous finissent au même rayon après un resize mobile)
+  const base   = getOrbitRadius();
+  const offset = Math.floor(-60 + Math.random()*120); // [-60, +60] px
+  img.dataset.rOffset = String(offset);
+  const r = Math.max(40, base + offset); // rayon clamped (jamais négatif)
+
+  orb.style.setProperty('--speed',  speed + 's');
+  img.style.setProperty('--size',   size  + 'px');
+  img.style.setProperty('--wobble', wobble + 's');
+  img.style.setProperty('--r',      r     + 'px');
+
+  orbitLayer.appendChild(orb);
+  orb.appendChild(img);
+}
 
     function syncOrbitIcons(){
       const needed=(upgrades.upgrade2.level|0), current=orbitLayer.children.length;
@@ -515,15 +554,17 @@
       }
     }
 
-    function recalibrateOrbitRadii(){
-      const base=getOrbitRadius();
-      Array.from(orbitLayer.children).forEach(orb=>{
-        const img=orb.firstElementChild; if(!img) return;
-        const cur=parseInt((img.style.getPropertyValue('--r')||'0').replace('px',''))||base;
-        const delta=Math.max(-40, Math.min(40, cur-base));
-        img.style.setProperty('--r', (base+delta)+'px');
-      });
-    }
+function recalibrateOrbitRadii(){
+  if(!orbitLayer) return;
+  const base = getOrbitRadius();
+  Array.from(orbitLayer.children).forEach(orb=>{
+    const img = orb.firstElementChild; if(!img) return;
+    const off = parseInt(img.dataset.rOffset || '0', 10); // on garde l’offset d’origine
+    const r = Math.max(40, base + off);
+    img.style.setProperty('--r', r + 'px');
+  });
+}
+
 
     let lastAngleMode = useSpacedAngles();
     window.addEventListener('resize', ()=>{
@@ -569,4 +610,3 @@
   </script>
 </body>
 </html>
-
