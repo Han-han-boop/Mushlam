@@ -109,18 +109,43 @@
     .miniCookie{position:absolute;opacity:0;animation:popFade var(--burst-duration,3s) ease-out forwards;will-change:transform,opacity;filter:drop-shadow(0 2px 6px rgba(0,0,0,.45))}
     @keyframes popFade{0%{opacity:0;transform:translateY(0) scale(.6) rotate(0)}10%{opacity:1}100%{opacity:0;transform:translateY(-20px) scale(1) rotate(360deg)}}
 
-    /* mega flash */
-    #megaFlash{position:fixed;inset:0;pointer-events:none;z-index:5;display:none}
-    #megaFlash.show{display:block;animation:fadeAll 4s ease-out forwards}
-    #megaFlash::before{
-      content:"";position:absolute;inset:-20vmax;opacity:.9;filter:blur(8px);
-      background:conic-gradient(from 0deg, rgba(255,215,0,0) 0 10deg, rgba(255,215,0,.35) 10deg 12deg, transparent 12deg 20deg);
-      animation:spin 1.2s linear infinite
-    }
-    #megaFlash img{
-      position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) scale(.2);
-      width:min(70vmin,800px);height:auto;filter:drop-shadow(0 0 30px rgba(255,215,0,.9)) drop-shadow(0 0 80px rgba(255,215,0,.6));
-      animation:boom 4s cubic-bezier(.2,.8,.2,1) forwards
+/* Mega flash (Upgrade 3) — centré écran */
+#megaFlash{
+  position: fixed; inset: 0; pointer-events: none;
+  z-index: 2147483000;          /* tout au-dessus */
+  display: none;
+}
+#megaFlash.show{ display:block; animation: fadeAll 2.2s ease-out forwards; }
+
+#megaFlash::before{
+  content:"";
+  position: fixed; inset: -20vmax;
+  opacity:.9; filter: blur(8px);
+  background: conic-gradient(from 0deg,
+    rgba(255,215,0,0) 0 10deg,
+    rgba(255,215,0,.35) 10deg 12deg,
+    transparent 12deg 20deg);
+  animation: spin 1s linear infinite;
+}
+
+#megaFlash img{
+  position: fixed; left: 50%; top: 50%;
+  transform: translate(-50%,-50%) scale(.2);
+  width: min(72vmin, 820px); height: auto;
+  filter: drop-shadow(0 0 30px rgba(255,215,0,.9))
+          drop-shadow(0 0 80px rgba(255,215,0,.6));
+  animation: boom 2.2s cubic-bezier(.2,.8,.2,1) forwards;
+  will-change: transform, opacity;
+}
+
+@keyframes spin{ to{ transform: rotate(360deg) } }
+@keyframes boom{
+  0%{   transform: translate(-50%,-50%) scale(.2) }
+  70%{  transform: translate(-50%,-50%) scale(1.12) }
+  100%{ transform: translate(-50%,-50%) scale(1) }
+}
+@keyframes fadeAll{ 0%{opacity:0} 15%{opacity:1} 100%{opacity:0} }
+
     }
     @keyframes spin{to{transform:rotate(360deg)}} @keyframes boom{0%{transform:translate(-50%,-50%) scale(.2)}70%{transform:translate(-50%,-50%) scale(1.12)}100%{transform:translate(-50%,-50%) scale(1)}}
     @keyframes fadeAll{0%{opacity:0}15%{opacity:1}100%{opacity:0}}
@@ -259,17 +284,22 @@
     @media (prefers-reduced-motion: reduce){
       *,*::before,*::after{ animation:none !important; transition-duration:0.01ms !important; }
     }
+	@media (max-width:800px){
+  .spin{ --spin-speed: 12s; }         /* rotation du cookie plus lente */
+  .miniCookie{ filter: drop-shadow(0 1px 4px rgba(0,0,0,.35)); } /* burst plus light */
+}
+
   </style>
 </head>
 <body>
   <!-- couche d’icônes de fond (unique) -->
   <div id="bgIconLayer" aria-hidden="true"></div>
-
+<div id="megaFlash" aria-hidden="true"></div>
   <div id="gameContainer">
     <header>
       <h1>Yehudi Clicker</h1>
       <div class="hud">
-        <div id="currencyDisplay" class="pill" aria-live="polite">Kipp : 0</div>
+        <div id="currencyDisplay" class="pill" aria-live="polite">Kippa : 0</div>
         <div id="cpsDisplay" class="pill">CPS : 0</div>
         <div id="cpcDisplay" class="pill">Par clic : 1</div>
       </div>
@@ -279,9 +309,9 @@
       <section class="clickZone" aria-label="Zone de clic">
         <div id="cookieWrap">
           <div id="cookieSpinner" class="spin">
-            <img id="cookieImage" src="https://i.postimg.cc/dVRtQ1xP/kippa.png" alt="Grosse Kipp cliquable">
+            <img id="cookieImage" src="https://i.postimg.cc/dVRtQ1xP/kippa.png" alt="Grosse Kippas cliquable">
           </div>
-          <div class="clickHint">Tapez sur la Kipp — ou <kbd>Espace</kbd> au clavier</div>
+          <div class="clickHint">Tapez sur la Kippa — ou <kbd>Espace</kbd> au clavier</div>
           <div id="orbitLayer" aria-hidden="true"></div>
         </div>
 
@@ -293,7 +323,7 @@
 
         <div id="floatLayer" aria-hidden="true"></div>
         <div id="burstLayer" aria-hidden="true"></div>
-        <div id="megaFlash" aria-hidden="true"></div>
+        
 
         <audio id="clickSound" src="https://han-han-boop.github.io/Mushlam/Kes.mp3" preload="auto"></audio>
       </section>
@@ -314,8 +344,8 @@
     // ====== ÉTAT ======
     let cookies = 0, muted = false, lastOrbitLevel = -1, lastBgCount = -1;
     const upgrades = {
-      upgrade1:{ id:'upgrade1', name:'Synagogue', desc:'Augmente les Kipp gagnés par clic.', icon:'https://i.postimg.cc/gJxx0phV/synagogue.png', sound:'https://han-han-boop.github.io/Mushlam/Mushlam.mp3', level:0, baseCost:2, cost:2, costFactor:COST_FACTOR_DEFAULT, multiplier:1 },
-      upgrade2:{ id:'upgrade2', name:'Rabbi', desc:'Produit des Kipp automatiquement (KpS).', icon:'https://i.postimg.cc/C5Ddj4md/Rabbi.png', sound:'https://han-han-boop.github.io/Mushlam/ashk.mp3', level:0, baseCost:25, cost:25, costFactor:COST_FACTOR_DEFAULT, production:5 },
+      upgrade1:{ id:'upgrade1', name:'Synagogue', desc:'Augmente les Kippas gagnés par clic.', icon:'https://i.postimg.cc/gJxx0phV/synagogue.png', sound:'https://han-han-boop.github.io/Mushlam/Mushlam.mp3', level:0, baseCost:2, cost:2, costFactor:COST_FACTOR_DEFAULT, multiplier:1 },
+      upgrade2:{ id:'upgrade2', name:'Rabbin', desc:'Produit des Kippas automatiquement (KpS).', icon:'https://i.postimg.cc/C5Ddj4md/Rabbi.png', sound:'https://han-han-boop.github.io/Mushlam/ashk.mp3', level:0, baseCost:25, cost:25, costFactor:COST_FACTOR_DEFAULT, production:5 },
       upgrade3:{ id:'upgrade3', name:'Le Peuple Elu', desc:'Augmente toutes les productions de 25% par niveau.', icon:'https://i.postimg.cc/k5c4s4QF/elu.png', sound:'https://han-han-boop.github.io/Mushlam/Ye.mp3', level:0, baseCost:50, cost:50, costFactor:1.3, multiplier:25 }
     };
 
@@ -360,9 +390,9 @@
 
     // ====== UI ======
     function updateHUD(){
-      currencyDisplay.textContent = `Kipp : ${formatCookies(cookies)}`;
-      cpsDisplay.textContent = `Kipp par seconde : ${formatCookies(cookiesPerSecond())}`;
-      cpcDisplay.textContent = `Kipp par clic : ${formatCookies(cookiesPerClick())}`;
+      currencyDisplay.textContent = `Kippa : ${formatCookies(cookies)}`;
+      cpsDisplay.textContent = `Kippas par seconde : ${formatCookies(cookiesPerSecond())}`;
+      cpcDisplay.textContent = `Kippas par clic : ${formatCookies(cookiesPerClick())}`;
     }
     function createUpgradeCard(u){
       const card = document.createElement('div');
