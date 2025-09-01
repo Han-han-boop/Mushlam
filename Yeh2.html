@@ -289,6 +289,53 @@
   .miniCookie{ filter: drop-shadow(0 1px 4px rgba(0,0,0,.35)); } /* burst plus light */
 }
 
+/* ===== Centrage parfait du cookie sur mobile ===== */
+@media (max-width: 800px){
+
+  /* La zone devient une grille : 1) cookie centré  2) barre de commandes en bas */
+  .clickZone{
+    display: grid;
+    grid-template-rows: 1fr auto;     /* le cookie prend tout l'espace dispo, la barre reste en bas */
+    align-items: center;
+    min-height: clamp(520px, 74dvh, 740px);
+    padding: 16px 12px;
+  }
+
+  /* Le wrap du cookie remplit la 1ère ligne et centre son contenu au milieu */
+  #cookieWrap{
+    margin-top: 0;                     /* annule le petit décalage vers le haut */
+    display: grid;
+    place-items: center;               /* centre parfaitement le cookie + ses orbites */
+    min-height: clamp(360px, 62dvh, 620px);
+    align-self: stretch;               /* occupe bien la ligne 1 */
+  }
+
+  /* Le bouton “tap” peut rester, mais on le décale un peu sous le cookie */
+  .clickHint{ margin-top: 10px; }
+
+  /* La barre de commandes occupe la 2e ligne (en bas), non sticky pour ne plus pousser le cookie */
+  .controls{
+    position: static;                  /* override toute règle sticky précédente */
+    inset: auto;
+    margin: 14px 0 0;
+    align-self: end;                   /* colle en bas de la zone */
+    justify-content: center;
+    gap: 10px;
+    background: rgba(10,12,18,.45);
+    border: 1px solid rgba(255,255,255,.12);
+    border-radius: 14px;
+    padding: 8px;
+    backdrop-filter: blur(8px);
+  }
+
+  /* Cibles tactiles confortables */
+  .btn, .buy, button{ min-height: 48px; padding: 12px 16px; font-size: 16px; border-radius: 14px; }
+
+  /* Au cas où un overlay resterait cliquable au-dessus : on neutralise */
+  #bgIconLayer, #burstLayer, #megaFlash{ pointer-events: none !important; }
+}
+
+
   </style>
 </head>
 <body>
@@ -333,7 +380,7 @@
       </aside>
     </div>
 
-    <footer><span class="badge">Astuce : Maj-clic = ×10 | Ctrl-clic = “max”</span></footer>
+    <footer><span class="badge">Astuce : Maj-clic = ×10 | Ctrl-clic = “max”. Mushlam</span></footer>
   </div>
 
   <script>
