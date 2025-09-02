@@ -493,7 +493,7 @@ const hanSpawnChance = () => {
   let celebrationActive = false;
   
   const upgrades = {
-    upgrade1:{ id:'upgrade1', name:'Synagogue', desc:'Augmente les Kippas gagnés par clic.', icon:'https://i.postimg.cc/gJxx0phV/synagogue.png', sound:'https://han-han-boop.github.io/Mushlam/Mushlam.mp3', level:0, baseCost:1, cost:1, costFactor:COST_FACTOR_DEFAULT, multiplier:1 },
+    upgrade1:{ id:'upgrade1', name:'Synagogue', desc:'Augmente les Kippas gagnés par clic.', icon:'https://i.postimg.cc/gJxx0phV/synagogue.png', sound:'https://han-han-boop.github.io/Mushlam/Mushlam.mp3', level:0, baseCost:2, cost:2, costFactor:COST_FACTOR_DEFAULT, multiplier:1 },
     upgrade2:{ id:'upgrade2', name:'Rabbin', desc:'Produit des Kippas automatiquement (KpS).', icon:'https://i.postimg.cc/C5Ddj4md/Rabbi.png', sound:'https://han-han-boop.github.io/Mushlam/ashk.mp3', level:0, baseCost:25, cost:25, costFactor:COST_FACTOR_DEFAULT, production:5 },
     upgrade3:{ id:'upgrade3', name:'Le Peuple Elu', desc:'Augmente toutes les productions de 25% par niveau.', icon:'https://i.postimg.cc/k5c4s4QF/elu.png', sound:'https://han-han-boop.github.io/Mushlam/Ye.mp3', level:0, baseCost:100, cost:100, costFactor:1.3, multiplier:25 },
     upgrade4:{ id:'upgrade4', name:'Retour en terre Sainte', desc:'Augmente le KpS des Rabbin de +3 / niveau et +1 Kippa par Synagogue', icon:'https://han-han-boop.github.io/Mushlam/TS.png', hanIcon:'https://han-han-boop.github.io/Mushlam/Arvi.png', sound:'https://han-han-boop.github.io/Mushlam/Kal.mp3', level:0, baseCost:100000, cost:100000, costFactor:1.4 },
@@ -527,7 +527,7 @@ const hanSpawnChance = () => {
   
   // --- Versionnage de la sauvegarde / reset one-shot ---
 const BUILD_KEY = 'mushlam-build';
-const BUILD_ID  = '2-03';     // ← change ce tag à chaque déploiement où tu veux reset
+const BUILD_ID  = '2-04';     // ← change ce tag à chaque déploiement où tu veux reset
 const SAVE_KEY  = 'cookie-clicker-save-v2';   // nouvelle clé (bump)
 const OLD_KEYS  = ['cookie-clicker-save'];    // anciennes clés à purger une fois
 
