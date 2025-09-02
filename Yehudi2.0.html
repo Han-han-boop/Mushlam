@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>Mushlam2.0</title>
+  <title>Mushlam</title>
   <style>
     /* ------------------------------------
        Design tokens + responsive helpers
@@ -470,7 +470,7 @@
   // ====== CONFIG / ÉQUILIBRAGE ======
   const COST_FACTOR_DEFAULT = 1.25;
   const TICK_MS = 250;
-  const HAN_KPS_PENALTY = -1000;
+  const HAN_KPS_PENALTY = -(1000+(upgrades.upgrade4.level*500)+(upgrades.upgrade4.level*upgrades.upgrade4.level*100);
   const HAN_SPAWN_CHANCE = 0.2; // ta valeur
   const BOOST_HAN_KPS_INCREASE = 3;
 
@@ -517,7 +517,7 @@
   
   // --- Versionnage de la sauvegarde / reset one-shot ---
 const BUILD_KEY = 'mushlam-build';
-const BUILD_ID  = '2-0';     // ← change ce tag à chaque déploiement où tu veux reset
+const BUILD_ID  = '2-01';     // ← change ce tag à chaque déploiement où tu veux reset
 const SAVE_KEY  = 'cookie-clicker-save-v2';   // nouvelle clé (bump)
 const OLD_KEYS  = ['cookie-clicker-save'];    // anciennes clés à purger une fois
 
