@@ -612,6 +612,17 @@ function renderPrestigeRow(){
 }
 
 
+function centerOrbitLayer(){
+  if(!orbitLayer || !cookieWrap || !cookieImg) return;
+  const wrap = cookieWrap.getBoundingClientRect();
+  const img  = cookieImg.getBoundingClientRect();
+  const cx = img.left - wrap.left + img.width  / 2;
+  const cy = img.top  - wrap.top  + img.height / 2;
+  orbitLayer.style.left = cx + 'px';
+  orbitLayer.style.top  = cy + 'px';
+}
+
+
 function prestigeMultiplier(){
   return 1 + prestigeRuns * PRESTIGE_BONUS_PER_RUN;
 }
@@ -1260,6 +1271,10 @@ setTimeout(()=> toast.remove(), 1500);
     onStateChange(false); 
     syncBgIcons(); 
     syncOrbitIcons(); 
+if (cookieImg.complete) centerOrbitLayer();
+else cookieImg.addEventListener('load', () => { centerOrbitLayer(); recalibrateOrbitRadii(); });
+window.addEventListener('resize', () => { centerOrbitLayer(); recalibrateOrbitRadii(); });
+
   }
   init();
 
@@ -1374,6 +1389,7 @@ function syncOrbitIcons(){
 
 
 function recalibrateOrbitRadii(){
+centerOrbitLayer();
   const base = getOrbitRadius();
   const wrapRect = cookieWrap?.getBoundingClientRect?.() || {width:0,height:0};
   const safeMaxCommon = Math.min(wrapRect.width, wrapRect.height)/2;
@@ -1438,5 +1454,6 @@ function recalibrateOrbitRadii(){
   
 </body>
 </html>
+
 
 
