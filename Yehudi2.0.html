@@ -405,6 +405,65 @@
     @media (max-width: 800px){
       .shop{ max-height: none !important; overflow: visible !important; }
     }
+	
+	/* --- Prestige (badge + halo cumulatif) --- */
+#cookieSpinner{ position: relative; } /* pour le ::after */
+#cookieSpinner.prestige-halo::after{
+  content:""; position:absolute; inset:-6px; border-radius:50%;
+  pointer-events:none;
+  box-shadow:
+    0 0 calc(8px + 2px * var(--prestige,0)) rgba(255,210,77,.55),
+    0 0 calc(22px + 4px * var(--prestige,0)) rgba(112,181,255,.30);
+  animation: haloPulse 2.6s ease-in-out infinite;
+}
+@keyframes haloPulse{
+  0%,100%{ opacity:.8; transform: scale(1) }
+  50%{ opacity:1; transform: scale(1.04) }
+}
+/* petit badge prestige */
+.badge.prestige{ font-weight:800; letter-spacing:.3px }
+
+/* Rangée d’icônes prestige (une image par run) */
+/* Rangée prestige : léger chevauchement et halo blanc */
+.prestige-row{
+  display:flex; align-items:center; flex-wrap:wrap;
+  gap:0; /* on gère l'espacement via margin négatif */
+  max-width:min(70vw, 420px);
+}
+
+.prestige-row img{
+  /* plus gros */
+  width:41px; height:41px; /* ajuste 28–36 si tu préfères */
+  /* chevauchement doux vers la gauche */
+  margin-left:-17px;
+  /* belle lisibilité sur fond sombre/chargé */
+  filter:
+    drop-shadow(0 0 2px rgba(0,0,0,.99))
+    drop-shadow(0 0 6px rgba(205,205,205,.95))
+    drop-shadow(0 0 12px rgba(255,055,255,.25));
+  /* un peu de relief */
+  transform-origin:center;
+  transition:transform .12s ease;
+  position:relative; /* pour que le z-index prenne */
+  z-index:1;
+  user-select:none;
+}
+.prestige-row img:first-child{ margin-left:0; }
+
+/* au survol : passe au-dessus des voisines et grossit très légèrement */
+.prestige-row img:hover{
+  transform:translateY(-1px) scale(1.05);
+  z-index:2;
+}
+
+/* si tu utilises le badge +N, on l’espace un peu du dernier icône */
+.prestige-row .prestige-more{ margin-left:6px; }
+
+@media (max-width:800px){
+  .prestige-row{ max-width: 70vw; }
+}
+
+
   </style>
 </head>
 <body>
@@ -414,7 +473,10 @@
 
   <div id="gameContainer">
     <header>
-      <h1>Yehudi Clicker</h1>
+      <h1>Yehudi Clicker</h1> <!-- Rangée d’icônes prestige -->
+<div id="prestigeRow" class="prestige-row" aria-label="Prestige"></div>
+
+
       <div class="hud">
         <div id="currencyDisplay" class="pill" aria-live="polite">Kippa : 0</div>
         <div id="cpsDisplay" class="pill">KpS : 0</div>
@@ -466,20 +528,94 @@
 
   function markHUD(){ hudDirty = true; }
   function markShop(){ shopDirty = true; }
+  
+  // === Prestige (bonus permanent qui s’empile à chaque fin de jeu) ===
+const PRESTIGE_KEY = 'cookie-clicker-prestige-v1';
+const PRESTIGE_BONUS_PER_RUN = 0.10;   // +10% par run
+let prestigeRuns = 0;
+// Icône PNG utilisée pour chaque prestige
+const PRESTIGE_ICON_URL   = 'https://i.ibb.co/rKK6kg17/Menorah-PNG-Image.png'; // <-- remplace par ton PNG
+const PRESTIGE_ICON_SIZE  = 55;   // px
+const PRESTIGE_MAX_VISIBLE = 24;  // affiche +N au-delà ; mets 0 pour tout afficher
+
+function renderPrestigeRow(){
+  const row = document.getElementById('prestigeRow');
+  if(!row) return;
+  row.innerHTML = '';
+
+  if(prestigeRuns <= 0){
+    row.style.display = 'none';
+    return;
+  }
+  row.style.display = '';
+
+  const frag = document.createDocumentFragment();
+  const visible = (PRESTIGE_MAX_VISIBLE && prestigeRuns > PRESTIGE_MAX_VISIBLE)
+    ? PRESTIGE_MAX_VISIBLE : prestigeRuns;
+
+  for(let i=0;i<visible;i++){
+    const img = new Image(PRESTIGE_ICON_SIZE, PRESTIGE_ICON_SIZE);
+    img.src = PRESTIGE_ICON_URL;
+    img.alt = '';
+    img.draggable = false;
+    frag.appendChild(img);
+  }
+  row.appendChild(frag);
+
+  // Badge +N si on dépasse la limite d’affichage
+  if(PRESTIGE_MAX_VISIBLE && prestigeRuns > PRESTIGE_MAX_VISIBLE){
+    const more = document.createElement('span');
+    more.className = 'prestige-more';
+    more.textContent = `+${prestigeRuns - PRESTIGE_MAX_VISIBLE}`;
+    row.appendChild(more);
+  }
+
+  row.title = `Prestige ×${prestigeRuns}`;
+}
+
+
+function prestigeMultiplier(){
+  return 1 + prestigeRuns * PRESTIGE_BONUS_PER_RUN;
+}
+function applyPrestigeCosmetics(){
+  // Halo qui grossit avec le prestige (garde ce que tu avais)
+  const spinner = document.getElementById('cookieSpinner');
+  if(spinner){
+    spinner.classList.add('prestige-halo');
+    spinner.style.setProperty('--prestige', String(prestigeRuns));
+  }
+
+  // Afficher la rangée d’icônes
+  renderPrestigeRow();
+
+  // Si un ancien badge texte traîne encore, on le retire
+  const old = document.getElementById('prestigeBadge');
+  if(old) old.remove();
+}
+
+
+
+function playSfx(url){
+  if(!url) return;
+  try{
+    const a = new Audio(url);
+    a.play().catch(()=>{});
+  }catch{}
+}
 
   // ====== CONFIG / ÉQUILIBRAGE ======
   const COST_FACTOR_DEFAULT = 1.25;
   const TICK_MS = 250;
 const hanKpsPenalty = () => {
   const L = upgrades.upgrade4.level | 0;
-  return -(1000 + 500*L + (100*L*L)/2);
+  return -(1000 + 300*L + (100*L*L)/3);
 };
 
 // Chance d'apparition d'un HAN (dynamique)
 // Formule demandée : 0.25 + level/100, avec un plafond de sécurité
 const hanSpawnChance = () => {
   const L = upgrades.upgrade4.level | 0;
-  return Math.min(0.70, 0.25 + L / 50); // ajuste le plafond si besoin
+  return Math.min(0.60, 0.15 + L / 60); // ajuste le plafond si besoin
 };
 
   const BOOST_HAN_KPS_INCREASE = 3;
@@ -499,7 +635,7 @@ const hanSpawnChance = () => {
     upgrade4:{ id:'upgrade4', name:'Retour en terre Sainte', desc:'Augmente le KpS des Rabbin de +3 / niveau et +1 Kippa par Synagogue', icon:'https://han-han-boop.github.io/Mushlam/TS.png', hanIcon:'https://han-han-boop.github.io/Mushlam/Arvi.png', sound:'https://han-han-boop.github.io/Mushlam/Kal.mp3', level:0, baseCost:100000, cost:100000, costFactor:1.4 },
     upgrade5:{ id:'upgrade5', name:'Le Dôme de fer', desc:'Convertit tous les Arvis.', icon:'https://han-han-boop.github.io/Mushlam/Dome.png', sound:'https://han-han-boop.github.io/Mushlam/Arv.mp3', level:0, baseCost:500000, cost:500000, costFactor:1.2, isPassive:true },
     upgrade7:{ id:'upgrade7', name:'Bar Mitzvah', desc:'Remet le coût de toutes les autres upgrades à leur prix initial.', icon:'https://han-han-boop.github.io/Mushlam/Bar.png', sound:'https://han-han-boop.github.io/Mushlam/Tov.mp3', level:0, baseCost:7500000, cost:7500000, costFactor:2.0, isPassive:true },
-    upgrade6:{ id:'upgrade6', name:'לחץ כדי לשלוח את הנתונים שלך למארק צוקרברג', desc:'תודה על המידע האישי שלך', icon:'https://han-han-boop.github.io/Mushlam/imgb.png', hoicone:'https://i.postimg.cc/k5c4s4QF/elu.png', sound:'https://han-han-boop.github.io/Mushlam/Hava.mp3', level:0, baseCost:1000000000, cost:1000000000, costFactor:2, isPassive:true }
+    upgrade6:{ id:'upgrade6', name:'לחץ כדי לשלוח את הנתונים שלך למארק צוקרברג', desc:'תודה על המידע האישי שלך', icon:'https://han-han-boop.github.io/Mushlam/imgb.png', hoicone:'https://i.postimg.cc/k5c4s4QF/elu.png', sound:'https://han-han-boop.github.io/Mushlam/Hava.mp3', level:0, baseCost:999999999, cost:999999999, costFactor:3, isPassive:true }
   };
 
   // ====== OUTILS ======
@@ -555,6 +691,8 @@ function save(){
     )
   };
   localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+  localStorage.setItem(PRESTIGE_KEY, String(prestigeRuns));
+
 }
 
 function load(){
@@ -574,6 +712,9 @@ function load(){
   }catch{
     localStorage.removeItem(SAVE_KEY);
   }
+  const p = localStorage.getItem(PRESTIGE_KEY);
+if(p !== null) prestigeRuns = Math.max(0, parseInt(p,10) || 0);
+
 }
 
   
@@ -587,7 +728,9 @@ function load(){
   
   const CLICK_SYNERGY_PER_UP1 = 1;
 
-  const globalMultiplier = ()=> 1 + upgrades.upgrade3.level*(upgrades.upgrade3.multiplier/100);
+  const globalMultiplier = ()=>
+  (1 + upgrades.upgrade3.level*(upgrades.upgrade3.multiplier/100)) * prestigeMultiplier();
+
   
   const cookiesPerClick = ()=> {
     const u1 = upgrades.upgrade1.level;
@@ -727,7 +870,7 @@ function load(){
         return;
       } else if(id==='upgrade7' && cookies>=u.cost){
         cookies -= u.cost; u.level++;
-        if(!muted && u.sound){ try{ new Audio(u.sound).play(); }catch{} }
+        if(u.sound) playSfx(u.sound);
         resetAllCosts('upgrade7');
         playPriceResetFX();
         u.cost = Math.max(1, Math.round(u.cost * u.costFactor));
@@ -827,7 +970,7 @@ function rollHANForNewRabbi(){
   // Conversion des HAN
   function convertAllHAN() {
     if(hanCount === 0) return;
-    if(!muted && upgrades.upgrade5?.sound){ try { new Audio(upgrades.upgrade5.sound).play(); } catch {} }
+    if(upgrades.upgrade5?.sound) playSfx(upgrades.upgrade5.sound);
     const hanOrbs = Array.from(orbitLayer.querySelectorAll('.orb.han'));
     hanOrbs.forEach(orb => {
       const icon = orb.querySelector('.orbitIcon');
@@ -850,8 +993,9 @@ function rollHANForNewRabbi(){
     `;
     document.body.appendChild(overlay);
     const soundUrl = mp3Url || upgrades.upgrade6.sound; 
-    let finaleAudio = null;
-    if(!muted && soundUrl){ try{ finaleAudio = new Audio(soundUrl); finaleAudio.volume = 1; finaleAudio.play().catch(()=>{}); }catch{} }
+let finaleAudio = null;
+if(soundUrl){ try{ finaleAudio = new Audio(soundUrl); finaleAudio.volume = 1; finaleAudio.play().catch(()=>{}); }catch{} }
+
     for(let i=0;i<140;i++){ const s=document.createElement('div'); s.className='twinkle'; s.style.left=(Math.random()*100)+'%'; s.style.top=(Math.random()*100)+'%'; s.style.animationDelay=(Math.random()*2000)+'ms'; overlay.appendChild(s); }
     const fwTimer = setInterval(()=> spawnFirework(overlay), 500);
     const confTimer = setInterval(()=> spawnConfetti(overlay, 28), 800);
@@ -859,7 +1003,87 @@ function rollHANForNewRabbi(){
     credits.className = 'finaleCredits';
     credits.innerHTML = `
       <h3>— Bravo mon Gourmand ! —</h3>
-      <p>…</p>
+      <p>בליל שקט אחד, יונתן מצא מכתב ללא כתובת.
+האותיות נצצו כאילו נכתבו מאור ירח רטוב.
+הוא פתח בעדינות וקרא: "צא אל הגבעה לפני הזריחה."
+יונתן לבש מעיל דק, קשר שרוכים, ויצא.
+העיר ישנה, אך הכלבים שמעו את צעדיו הרכים.
+הרוח נשאה ריח של זעתר ואבק ישן.
+בקצה הרחוב עמדה אישה עם מנורה קטנה.
+"אתה מאחר," אמרה, "אבל עוד לא מאוחר מדי."
+הם צעדו יחד, מבעד לשער ברזל חלוד.
+מאחורי השער נגלתה גינה שלא היתה שם אתמול.
+עצים כתבו שמות על שמיים כהים בענפים דקים.
+המנורה ריצדה, וכל ריצוד גילה שביל נוסף.
+"כאן שוכנות שאלות," לחשה האישה, "ותשובות בורחות מהר."
+יונתן כרע ליד אבן ועליה חרוט סימן דג.
+כשהניח את כפו, האבן נהייתה חמימה ומתרגשת.
+מתחתיה הסתתר מפתח, עשוי צל וכסף פשוט.
+"המפתח יפתח רק מה שמוכן להיסגר," אמרה.
+הוא חשב על חדר זעיר בלבו שטרם נפתח.
+בבוקר, כשהשמש נגעה בעלים, הדלת הופיעה.
+יונתן סובב את המפתח, והשקט למד לשיר.<br>
+
+בבוקר שלישי במיוחד, נועם קיבל פתק על הדלת.
+היה כתוב: "אנא העלה לגג מלפפון בשעה 08:00, אל תאחר."
+נועם לא שאל למה; הוא כבר איחר.
+הוא תפס נעל אחת אפורה ונעל אחת שמחה.
+החתול של השכנים אמר: "תתאם צבעים, לפחות עם המצפון."
+"המצפון בכביסה," ענה נועם ורץ למכולת.
+המוכר מדד מלפפונים עם סרגל של חינוך.
+"אתה צריך ארוך, קצר, או בעל דעות?"
+"בעל דעות," אמר נועם, "שלא ישתעמם במעלית."
+המלפפון נבח: "אני גם מספר בדיחות, אבל רק על ירקות."
+"מעולה," אמר נועם, ושילם במטבע של אתמול.
+המוכר החזיר עודף בעתיד הקרוב.
+בתחנת האוטובוס עבר קו 42 לכיוון "שבוע שעבר".
+הנהג צפר: "מי שממהר לעבר, לעלות מהר!"
+נועם בחר ללכת ברגל; הזמן כבר נשך את העקב.
+מעליו התווכחו שתי יונים על מס שבילים.
+אחת טענה שהיא רואת חשבון של פירורים.
+השנייה ביקשה קבלה על השמיים.
+במעלית הבניין הופיעו קומות לא רגילות: חמסה, מרק, נסתר.
+נועם לחץ על גג, קיבל הרצאה על מינימליזם.
+הדלת נפתחה לקומה "למה לא", והוא יצא בכל זאת.
+הרוח ניגנה על אנטנות שיר של חוטים.
+באמצע הגג ישבה ועדת עננים מסודרת מאוד.
+"הבאת מלפפון בהתאם לתקנה 7ב?" שאל ענן בצורת מהדק.
+"בהחלט," אמר המלפפון בעצמו, "אני גם מצחיק."
+" הוכח," דרש ענן אחר, בצורת טוסטר.
+המלפפון סיפר בדיחה על חציל עם תואר שני.
+העננים התחילו לטפטף מצחוק, ירד גשם סימני קריאה.
+הדלת הסודית לגג-על-גג נפתחה בנקישה של סימן שאלה.
+בפנים עמד קומקום כרום שהתקתק בזמן עתיק.
+שלט קטן הזהיר: "לא לשתות את הזמן על בטן ריקה."
+נועם ערבב דקה ושתי שניות עם נענע.
+בטעות קפצו כולם ליום שלישי הקודם בשעה 07:59.
+"מצוין," אמר נועם, "עוד דקה להפסיק לא לאחר."
+החתול מהעבר העיר: "אמרתי לך צבעים!"
+המוכר מהעבר עדיין שקל בין קצר לארוך.
+נועם לקח עוד מלפפון, הפעם עם זקן קליל.
+הוא הוסיף פטרוזיליה מהעתיד למען שוויון כרונולוגי.
+במעלית לזמן-רגיל לחצה אישה עם מנורה על "נסתר".
+"היי," אמרה, "אני עובדת לילה, אבל סקרנית."
+"אנחנו במסירה קלה לעננים," הסביר נועם בפשטות.
+"רק אל תשברו את הקומקום; הוא שייך למחר."
+חזרו לגג בזמן הנכון, 08:00 בדיוק, לפי שעון ענני.
+ראש הוועדה קשקש ברעם: "נא לפתוח בדיחה ולאסוף מדדים."
+המלפפון סיפר על עגבנייה שהפכה לסרט תיעודי.
+השמש מחאה כפיים עם תריסים פתוחים.
+הדלת אל משרד השחפים נפתחה בצליל "קאאא".
+בפנים ישב ראש העיר, שחף עם עניבה מנוקדת.
+"לפי התקנה," אמר, "צריך להגיש סלט הוכחות."
+נועם ערבב את שתי התקופות, הוסיף קצת פלפל אופטימיות.
+האישה עם המנורה בדקה תאורה פנימית של הירקות.
+היונים חישבו מיסוי רטבים, וקיבלו פטור על צחוק.
+הסלט צלצל כמו טלפון ישן והודיע: "אני מוכן."
+הוועדה טעמה והצביעה באגודל ענני כלפי מעלה.
+"רק בעיה אחת," צייץ שחף העוזר, "זה הגג של הבניין השכן."
+כולם הביטו בשלט: "גג ב' — טיסות למחשבות בלבד."
+נועם התיישב, חשב, ואז העביר את המחשבה ברגליים.
+רעיון קטן פתח מעבר דק בין הגגות.
+החג הוכרז: "פסטיבל המלפפון הנודד" לשני הבניינים יחד.
+ובסוף היום, כשהרוח חתמה על המסמכים, הזמן פרגן חמש דקות נוספות.<br><strong>💛</strong> </p>
       <p>Mushlam !</p>
     `;
     overlay.appendChild(credits);
@@ -870,7 +1094,19 @@ function rollHANForNewRabbi(){
       root.appendChild(fw); setTimeout(()=>fw.remove(), 1200);
     }
     function spawnConfetti(root, count){ const colors = ['#ffd24d','#70b5ff','#9ef0a3','#ff7aa2','#ffffff']; for(let i=0;i<count;i++){ const c=document.createElement('div'); c.className='confetti'; c.style.left = Math.random()*100+'%'; c.style.top = '-5%'; c.style.setProperty('--c', colors[(Math.random()*colors.length)|0]); c.style.setProperty('--r', (Math.random()*360|0)+'deg'); c.style.animationDelay = (Math.random()*400)+'ms'; root.appendChild(c); setTimeout(()=>c.remove(), 2300); } }
-    function cleanup(){ clearInterval(fwTimer); clearInterval(confTimer); try{ if(finaleAudio) finaleAudio.pause(); }catch{} overlay.remove(); celebrationActive = false; }
+    function cleanup(){ clearInterval(fwTimer); clearInterval(confTimer); try{ if(finaleAudio) finaleAudio.pause(); }catch{} overlay.remove(); celebrationActive = false; 
+	// --- Prestige : +1 run et feedback ---
+prestigeRuns++;
+localStorage.setItem(PRESTIGE_KEY, String(prestigeRuns));
+applyPrestigeCosmetics();
+
+// petit toast d’info
+const toast = document.createElement('div');
+toast.className = 'conversionMessage';
+toast.textContent = `Relique obtenue #${prestigeRuns}  —  bonus +${Math.round(PRESTIGE_BONUS_PER_RUN*100)}%`;
+document.body.appendChild(toast);
+setTimeout(()=> toast.remove(), 1500);
+}
     const auto = setTimeout(cleanup, 165000);
     overlay.addEventListener('click', ()=>{ clearTimeout(auto); cleanup(); });
     window.addEventListener('keydown', function onKey(e){ if(e.key==='Escape'){ clearTimeout(auto); cleanup(); window.removeEventListener('keydown', onKey); } });
@@ -968,7 +1204,9 @@ function rollHANForNewRabbi(){
 
   // ====== INIT ======
   function init(){ 
-    load(); 
+    load();
+	applyPrestigeCosmetics();
+
     muteToggle.checked=muted; 
     renderShop(); 
     onStateChange(false); 
