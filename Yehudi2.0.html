@@ -135,9 +135,42 @@
     #orbitLayer{position:absolute;left:50%;top:50%;width:0;height:0;pointer-events:none;z-index:3;perspective:800px}
     .orb{position:absolute;left:0;top:0;z-index: 1;transform:rotate(var(--a0,0deg));transform-origin:0 0;animation:spinOrbit var(--speed,18s) linear infinite}
     .orb.han .orbitIcon{ filter: drop-shadow(0 0 12px var(--han-red)) drop-shadow(0 0 25px rgba(255,0,0,.6));z-index: 10; width: calc(var(--size,32px) * 1.2); height: calc(var(--size,32px) * 1.2); --r: calc(var(--base-r, 160px) * 0.85); animation: wobble calc(var(--wobble,2.6s) * 1.3) ease-in-out infinite }
-    .orbitIcon{ display:block; width:var(--size,32px); height:var(--size,32px); will-change:transform; transform-origin:center; animation:wobble var(--wobble,2.6s) ease-in-out infinite; filter: drop-shadow(0 0 8px #ffd24d) drop-shadow(0 0 18px rgba(255,215,0,.55)) }
-    @keyframes spinOrbit{to{transform:rotate(calc(var(--a0,0deg) + 360deg))}}
+    /* HAN au-dessus des rabbins en toute circonstance */
+.orb{ z-index: 1; }
+.orb.han{ z-index: 10; } /* au-dessus */
+
+	.orbitIcon{ display:block; width:var(--size,32px); height:var(--size,32px); will-change:transform; transform-origin:center; animation:wobble var(--wobble,2.6s) ease-in-out infinite; filter: drop-shadow(0 0 8px #ffd24d) drop-shadow(0 0 18px rgba(255,215,0,.55)) }
+@keyframes spinOrbit {
+  to { transform: rotate(calc(var(--a0, 0deg) - 200deg)); }
+}
+
+.orb { 
+  position:absolute; left:0; top:0;
+  transform-origin:0 0;
+  animation: spinOrbit var(--speed,18s) linear infinite;
+}
+
+.iconWrapper {
+  transform-origin:center;
+  animation: wobble var(--wobble,2.6s) ease-in-out infinite;
+}
     @keyframes wobble{0%{transform:translateX(var(--r,160px)) rotateY(-20deg) scale(.9)}50%{transform:translateX(var(--r,160px)) rotateY(20deg) scale(1.1)}100%{transform:translateX(var(--r,160px)) rotateY(-20deg) scale(.9)}}
+
+
+
+
+.orbitIcon {
+  display:block;
+  width:var(--size,32px); height:var(--size,32px);
+  transform-origin:center;
+  rotate: var(--self-a0, 0deg);
+  animation: spinSelf var(--self-speed,12s) linear infinite;
+  filter: drop-shadow(0 0 8px #ffd24d) drop-shadow(0 0 18px rgba(255,215,0,.55));
+}
+
+@keyframes spinSelf {
+  to { rotate: calc(var(--self-a0, 0deg) + 360deg); }
+}
 
     .clickHint{margin-top:8px;color:var(--muted);font-size:14px;text-align:center}
 
@@ -513,6 +546,7 @@
 
 
 
+</div> <!-- </div> de .layout -->
 
   <script>
   /* =========================
@@ -522,6 +556,10 @@
   const FLOAT_MAX = 12;               // max "+N" visibles
   const HUD_INTERVAL = 150;           // ms => ~6-7 fps HUD
   const SHOP_INTERVAL = 400;          // ms => ~2-3 fps Shop
+  
+  // Cap *visuel* des rabbins (pas de changement de prod)
+const MAX_RABBI_ORBS = matchMedia('(pointer: coarse)').matches ? 50 : 60;
+
 
   let hudDirty = true, shopDirty = true;
   let lastHUDStamp = 0, lastShopStamp = 0;
@@ -635,7 +673,7 @@ const hanSpawnChance = () => {
     upgrade4:{ id:'upgrade4', name:'Retour en terre Sainte', desc:'Augmente le KpS des Rabbin de +3 / niveau et +1 Kippa par Synagogue', icon:'https://han-han-boop.github.io/Mushlam/TS.png', hanIcon:'https://han-han-boop.github.io/Mushlam/Arvi.png', sound:'https://han-han-boop.github.io/Mushlam/Kal.mp3', level:0, baseCost:100000, cost:100000, costFactor:1.4 },
     upgrade5:{ id:'upgrade5', name:'Le Dôme de fer', desc:'Convertit tous les Arvis.', icon:'https://han-han-boop.github.io/Mushlam/Dome.png', sound:'https://han-han-boop.github.io/Mushlam/Arv.mp3', level:0, baseCost:500000, cost:500000, costFactor:1.2, isPassive:true },
     upgrade7:{ id:'upgrade7', name:'Bar Mitzvah', desc:'Remet le coût de toutes les autres upgrades à leur prix initial.', icon:'https://han-han-boop.github.io/Mushlam/Bar.png', sound:'https://han-han-boop.github.io/Mushlam/Tov.mp3', level:0, baseCost:7500000, cost:7500000, costFactor:2.0, isPassive:true },
-    upgrade6:{ id:'upgrade6', name:'לחץ כדי לשלוח את הנתונים שלך למארק צוקרברג', desc:'תודה על המידע האישי שלך', icon:'https://han-han-boop.github.io/Mushlam/imgb.png', hoicone:'https://i.postimg.cc/k5c4s4QF/elu.png', sound:'https://han-han-boop.github.io/Mushlam/Hava.mp3', level:0, baseCost:999999999, cost:999999999, costFactor:3, isPassive:true }
+    upgrade6:{ id:'upgrade6', name:'לחץ כדי לשלוח את הנתונים שלך למארק צוקרברג', desc:'תודה על המידע האישי שלך', icon:'https://han-han-boop.github.io/Mushlam/imgb.png', hoicone:'https://i.postimg.cc/k5c4s4QF/elu.png', sound:'https://han-han-boop.github.io/Mushlam/Hava.mp3', level:0, baseCost:10000000000, cost:10000000000, costFactor:3, isPassive:true }
   };
 
   // ====== OUTILS ======
@@ -705,8 +743,14 @@ function load(){
     if(typeof data.hanCount  === 'number') hanCount  = data.hanCount;
     for (const k of Object.keys(upgrades)){
       if (data.upgrades?.[k]){
-        upgrades[k].level = data.upgrades[k].level|0;
-        upgrades[k].cost  = Math.max(1, data.upgrades[k].cost|0);
+upgrades[k].level = Math.max(0, Math.floor(Number(data.upgrades[k].level) || 0));
+
+// si la valeur est absente/NaN, on retombe sur baseCost proprement
+const savedCost = Number(data.upgrades[k].cost);
+upgrades[k].cost = Number.isFinite(savedCost)
+  ? Math.max(1, Math.floor(savedCost))
+  : upgrades[k].baseCost;
+
       }
     }
   }catch{
@@ -914,8 +958,8 @@ if(p !== null) prestigeRuns = Math.max(0, parseInt(p,10) || 0);
     }
 
     if(id==='upgrade3' && boughtCount>0) showMegaFlash();
-    if(id==='upgrade2' && boughtCount>0) pulseUpgrade2(false);
-    if(id==='upgrade4' && boughtCount>0) pulseUpgrade2(true);
+
+    if(id==='upgrade4' && boughtCount>0) pulseUpgrade2(false);
     onStateChange();
   }
 
@@ -941,9 +985,11 @@ if(p !== null) prestigeRuns = Math.max(0, parseInt(p,10) || 0);
   }
 
 function rollHANForNewRabbi(){
-  if (upgrades.upgrade4.level === 0){ 
-    addOrbitIcon(false); 
-    return false; 
+  if (upgrades.upgrade4.level === 0){
+    if (orbitLayer.querySelectorAll('.orb:not(.han)').length < MAX_RABBI_ORBS){
+      addOrbitIcon(false);
+    }
+    return false;
   }
   const isHan = Math.random() < hanSpawnChance();
   if (isHan){ 
@@ -951,7 +997,9 @@ function rollHANForNewRabbi(){
     addOrbitIcon(true); 
     return true; 
   }
-  addOrbitIcon(false); 
+  if (orbitLayer.querySelectorAll('.orb:not(.han)').length < MAX_RABBI_ORBS){
+    addOrbitIcon(false);
+  }
   return false;
 }
 
@@ -977,7 +1025,7 @@ function rollHANForNewRabbi(){
       icon.style.animation = 'stellarConversion 1s ease-out forwards';
       setTimeout(() => { orb.classList.remove('han'); icon.style.animation = ''; icon.style.filter = ''; }, 1000);
     });
-    const msg = document.createElement('div'); msg.className = 'conversionMessage'; msg.textContent = 'כן, תודה רבה'; document.body.appendChild(msg); setTimeout(() => msg.remove(), 1500);
+    const msg = document.createElement('div'); msg.className = 'conversionMessage'; msg.textContent = 'כן, תודה רבה כן, תודה רבה כן, תודה רבה'; document.body.appendChild(msg); setTimeout(() => msg.remove(), 1500);
     hanCount = 0; onStateChange();
   }
 
@@ -1247,81 +1295,105 @@ setTimeout(()=> toast.remove(), 1500);
     return Math.max(imgRect.width/2 + 8, Math.min(desired, safeMax));
   }
 
-  function addOrbitIcon(isHAN = false){
-    if(!orbitLayer) return;
-    const orb = document.createElement('div'); 
-    orb.className = 'orb' + (isHAN ? ' han' : '');
-	orb.style.zIndex = isHAN ? 10 : 1;
-    const img = document.createElement('img'); 
-    img.className = 'orbitIcon';
+function addOrbitIcon(isHAN = false){
+  if(!orbitLayer) return;
 
-    const rabbiIcon = upgrades.upgrade2.icon;
-    const hanIcon   = upgrades.upgrade4.hanIcon || rabbiIcon;
-    img.src = isHAN ? hanIcon : rabbiIcon;
-    img.alt = isHAN ? 'HAN orbital' : 'Icône production auto';
-    
-    const angle  = Math.floor(Math.random()*360);
-    const speed  = (isHAN ? 20 : 14) + +((Math.random()*(isHAN ? 16 : 12)).toFixed(1));
-    const wobble = (1.8 + Math.random()*1.6).toFixed(1);
-    const size   = Math.floor(42 + Math.random()*24);
+  const orb = document.createElement('div');
+  orb.className = 'orb' + (isHAN ? ' han' : '');
 
-    const baseRadius = getOrbitRadius();
-    const wrapRect   = cookieWrap?.getBoundingClientRect?.() || {width:0,height:0};
-    const clampMax   = Math.min(wrapRect.width, wrapRect.height)/2 - size/2 - (isTouch ? 6 : 10);
+  const wrapper = document.createElement('div');
+  wrapper.className = 'iconWrapper';
 
-    let desired = (isHAN ? baseRadius * 0.85 : baseRadius) + Math.floor(-24 + Math.random()*18); // -24..-6
-    let radius  = Math.max(cookieImg.getBoundingClientRect().width/2 + 6, Math.min(desired, clampMax));
+  const img = document.createElement('img');
+  img.className = 'orbitIcon';
 
-    orb.style.setProperty('--a0', angle+'deg');
-    orb.style.setProperty('--speed', speed+'s');
-    img.style.setProperty('--size',  size+'px');
-    img.style.setProperty('--r',     radius+'px');
-    img.style.setProperty('--base-r',baseRadius+'px');
-    img.style.setProperty('--wobble',wobble+'s');
+  // ✅ icônes définies
+  const rabbiIcon = upgrades.upgrade2.icon;
+  const hanIcon   = upgrades.upgrade4.hanIcon || rabbiIcon;
+  img.src = isHAN ? hanIcon : rabbiIcon;
+  img.alt = isHAN ? 'HAN orbital' : 'Icône production auto';
 
-    orbitLayer.appendChild(orb); 
-    orb.appendChild(img);
+  // Taille + self-rotation
+  const size = Math.floor(42 + Math.random()*24);
+  img.style.setProperty('--size',       size + 'px');
+  img.style.setProperty('--self-a0',    Math.floor(Math.random()*360) + 'deg');
+  img.style.setProperty('--self-speed', (10 + Math.random()*10).toFixed(1) + 's');
+
+  // Rayon et wobble portés par le WRAPPER
+  const baseRadius = getOrbitRadius();
+  const wobble     = (1.8 + Math.random()*1.6).toFixed(1);
+  // léger rétrécissement des HAN
+  const desired    = (isHAN ? baseRadius * 0.85 : baseRadius) + Math.floor(-24 + Math.random()*18);
+
+  // clamp pour éviter la sortie de la zone
+  const wrapRect = cookieWrap?.getBoundingClientRect?.() || {width:0,height:0};
+  const safeMax  = Math.min(wrapRect.width, wrapRect.height)/2 - size/2 - (isTouch?6:10);
+  const radius   = Math.max((cookieImg.getBoundingClientRect().width/2)+6, Math.min(desired, safeMax));
+
+  wrapper.style.setProperty('--r',      radius + 'px');
+  wrapper.style.setProperty('--base-r', baseRadius + 'px');
+  wrapper.style.setProperty('--wobble', wobble + 's');
+
+  // Angle/vitesse d’orbite sur le CONTENEUR
+  const angle = Math.floor(Math.random()*360);
+  const speed = (isHAN ? 20 : 14) + +((Math.random()*(isHAN ? 16 : 12)).toFixed(1));
+  orb.style.setProperty('--a0',    angle + 'deg');
+  orb.style.setProperty('--speed', speed + 's');
+
+  wrapper.appendChild(img);
+  orb.appendChild(wrapper);
+  orbitLayer.appendChild(orb);
+}
+
+
+function syncOrbitIcons(){
+  // 1) Sync des HAN (toujours visibles)
+  const currentHan = orbitLayer.querySelectorAll('.orb.han').length;
+  if (currentHan < hanCount){
+    for (let i = 0; i < (hanCount - currentHan); i++) addOrbitIcon(true);
+  } else if (currentHan > hanCount){
+    const extras = currentHan - hanCount;
+    Array.from(orbitLayer.querySelectorAll('.orb.han')).slice(0, extras).forEach(e => e.remove());
   }
 
-  function syncOrbitIcons(){
-    const currentHan = orbitLayer.querySelectorAll('.orb.han').length;
-    if(currentHan < hanCount){
-      for(let i=0; i<(hanCount - currentHan); i++) addOrbitIcon(true);
-    }else if(currentHan > hanCount){
-      const extras = currentHan - hanCount;
-      Array.from(orbitLayer.querySelectorAll('.orb.han')).slice(0, extras).forEach(e => e.remove());
-    }
-    const level = upgrades.upgrade2.level;
-    const normalNeeded = Math.max(0, level - hanCount);
-    const totalCurrent = orbitLayer.children.length;
-    const normalCurrent = totalCurrent - orbitLayer.querySelectorAll('.orb.han').length;
+  // 2) Sync des rabbins avec CAP visuel
+  const level = upgrades.upgrade2.level;                 // total “unités rabbin” possédées
+  const normalNeeded = Math.max(0, level - hanCount);    // théorique à afficher si pas de cap
+  const visualNormalNeeded = Math.min(normalNeeded, MAX_RABBI_ORBS);
 
-    if(normalCurrent < normalNeeded){
-      for(let i=0; i<(normalNeeded - normalCurrent); i++) addOrbitIcon(false);
-    }else if(normalCurrent > normalNeeded){
-      const toRemove = normalCurrent - normalNeeded;
-      const normals = Array.from(orbitLayer.querySelectorAll('.orb:not(.han)'));
-      for(let i=0; i<toRemove && i<normals.length; i++) normals[i].remove();
-    }
-  }
+  const normals = Array.from(orbitLayer.querySelectorAll('.orb:not(.han)'));
+  const normalCurrent = normals.length;
 
-  function recalibrateOrbitRadii(){
-    const base=getOrbitRadius();
-    const wrapRect = cookieWrap?.getBoundingClientRect?.() || {width:0,height:0};
-    const safeMaxCommon = Math.min(wrapRect.width, wrapRect.height)/2;
-    Array.from(orbitLayer.children).forEach(orb=>{
-      const img=orb.firstElementChild; 
-      if(!img) return;
-      const size  = parseInt((img.style.getPropertyValue('--size')||'32').replace('px',''))||32;
-      const cur   = parseInt((img.style.getPropertyValue('--r')   ||'0' ).replace('px',''))||base;
-      const delta = Math.max(-40, Math.min(40, cur-base));
-      let r = base + delta;
-      const clampMax = safeMaxCommon - size/2 - (isTouch?6:10);
-      r = Math.min(r, clampMax);
-      img.style.setProperty('--r', r+'px');
-      img.style.setProperty('--base-r', base+'px');
-    });
+  if (normalCurrent < visualNormalNeeded){
+    for (let i = 0; i < (visualNormalNeeded - normalCurrent); i++) addOrbitIcon(false);
+  } else if (normalCurrent > visualNormalNeeded){
+    // enlève les plus anciens (stables, peu de reflow)
+    for (let i = 0; i < (normalCurrent - visualNormalNeeded); i++) normals[i].remove();
   }
+}
+
+
+function recalibrateOrbitRadii(){
+  const base = getOrbitRadius();
+  const wrapRect = cookieWrap?.getBoundingClientRect?.() || {width:0,height:0};
+  const safeMaxCommon = Math.min(wrapRect.width, wrapRect.height)/2;
+
+  orbitLayer.querySelectorAll('.orb .iconWrapper').forEach(w=>{
+    const img  = w.querySelector('.orbitIcon');
+    const size = img ? (parseInt((img.style.getPropertyValue('--size')||'32').replace('px',''))||32) : 32;
+
+    const cur   = parseInt((w.style.getPropertyValue('--r')||'0').replace('px',''))||base;
+    const delta = Math.max(-40, Math.min(40, cur-base));
+    let r = base + delta;
+
+    const clampMax = safeMaxCommon - size/2 - (isTouch?6:10);
+    r = Math.min(r, clampMax);
+
+    w.style.setProperty('--r', r + 'px');
+    w.style.setProperty('--base-r', base + 'px');
+  });
+}
+
   window.addEventListener('resize', recalibrateOrbitRadii);
 
   function showMegaFlash(){ 
