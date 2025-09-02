@@ -883,10 +883,10 @@ if(p !== null) prestigeRuns = Math.max(0, parseInt(p,10) || 0);
           const newBadge = document.createElement('span');
           newBadge.className = 'badge';
           newBadge.style.cssText = 'background: var(--han-red); color: white;';
-          newBadge.textContent = `HAN: ${hanCount}`;
+          newBadge.textContent = `Arvi: ${hanCount}`;
           metaDiv.appendChild(newBadge);
         } else if(hanBadge) {
-          hanBadge.textContent = `HAN: ${hanCount}`;
+          hanBadge.textContent = `Arvi: ${hanCount}`;
           if(hanCount === 0) hanBadge.remove();
         }
       }
@@ -1438,4 +1438,5 @@ function recalibrateOrbitRadii(){
   
 </body>
 </html>
+
 
